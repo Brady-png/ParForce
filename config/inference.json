@@ -1,0 +1,7 @@
+{
+  "teacher": {"base":"MiniMax-H3 FL2VA","control":"MiniMax-H3-Fun-Controlnet-Union-2.0","adapter_step":5000,
+    "lora_rank":128,"force_rank":0,"canvas_wh":[576,384],"frames":90,"fps":24,"denoiser_calls":50,
+    "shift":12.0,"cfg":1.0,"control_scale":1.0,"audio":false},
+  "student": {"base":"MiniMax-H3 FL2VA","student_updates":200,"lora_rank":128,"canvas_wh":[640,384],
+    "frames":90,"fps":24,"denoiser_calls":4,"shift":6.0,"cfg":1.0,"audio":false}
+}

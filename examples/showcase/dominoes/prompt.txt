@@ -1,0 +1,2 @@
+Initial Scene: A straight row of six wooden domino blocks rests on a flat beige surface. The blocks alternate between blue and orange colors with vertical ridges. The first block is tilted forward while the remaining five stand upright.
+External Force: Begin with the first domino tilted forward and the remaining five dominoes upright and at rest. Apply downward gravity. Keep only the ground fixed; leave all six dominoes free.
