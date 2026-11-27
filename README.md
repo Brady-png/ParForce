@@ -16,8 +16,7 @@
   <a href="https://brady-png.github.io/parforce-project/"><strong>Project page</strong></a> ·
   <a href="https://brady-png.github.io/parforce-project/assets/paper.pdf"><strong>Paper</strong></a> ·
   <a href="https://huggingface.co/BRADY99/ParForce"><strong>Model weights</strong></a> ·
-  <a href="#quick-start"><strong>Quick start</strong></a> ·
-  <a href="#examples"><strong>Examples</strong></a>
+  <a href="#quick-start"><strong>Quick start</strong></a>
 </p>
 
 <p align="center">
@@ -73,39 +72,28 @@ hf download alibaba-pai/MiniMax-H3-Fun-Controlnet-Union-2.0 \
 ### 3. Run Teacher inference
 
 ```bash
-case_dir=examples/showcase/macarons
+input_dir=/path/to/teacher-inputs
 python infer.py teacher --base weights/minimax-h3/FL2VA --runtime runtime \
   --adapter weights/parforce/conditioned_models/parforce_h3_conditioned.safetensors \
   --control weights/union/MiniMax-H3-Fun-Controlnet-Union-2.0.safetensors \
-  --first-frame "$case_dir/first_frame.png" --prompt-file "$case_dir/prompt.txt" \
-  --particle "$case_dir/particles.mp4" --depth "$case_dir/depth.mp4" \
+  --first-frame "$input_dir/first_frame.png" --prompt-file "$input_dir/prompt.txt" \
+  --particle "$input_dir/particles.mp4" --depth "$input_dir/depth.mp4" \
   --work-dir runs/teacher --devices 4 --seed 42
 ```
 
-Output is `runs/teacher/outputs/result.mp4`. This example uses the archived macaron plate-pull inputs. Keep the first frame and both control videos registered to the same camera view.
+Output is `runs/teacher/outputs/result.mp4`. Use your own first frame, prompt, particle video and depth video. Keep the first frame and both control videos registered to the same camera view.
 
 ### 4. Run four-step Student inference
 
-The student takes only the first frame and the official prompt for **Roll into box**. [Watch the archived comparison](https://brady-png.github.io/parforce-project/#student-comparisons/roll-into-box).
-
 ```bash
-case_dir=examples/student/roll-into-box
+input_dir=/path/to/student-inputs
 python infer.py student --base weights/minimax-h3/FL2VA --runtime runtime \
   --adapter weights/parforce/parforce_h3_student.safetensors \
-  --first-frame "$case_dir/first_frame.png" --prompt-file "$case_dir/prompt.txt" \
-  --student-case-manifest "$case_dir/manifest.json" \
-  --work-dir runs/roll-into-box --devices 4
+  --first-frame "$input_dir/first_frame.png" --prompt-file "$input_dir/prompt.txt" \
+  --work-dir runs/student --devices 4 --seed 42
 ```
 
-Output is `runs/roll-into-box/outputs/student/result.mp4`. The [example manifest](examples/student/roll-into-box/manifest.json) supplies the benchmark seed (42150), 124 generated frames, 120 saved frames at 24 fps, and the original viewport restored to 3840 × 2160. The archived video was generated on CUDA. The Ascend run recomputes the encodings and samples noise on its own backend, so the motion can differ. Both launchers write inference receipts beside the video. Use a fresh work directory per run.
-
-## Examples
-
-| Example | What is provided |
-| --- | --- |
-| [Teacher showcase inputs](examples/showcase/) | Macarons, simple dominoes, curtain, milk pour, and red wine pour. Each has its original first frame, prompt, particles, and depth. [Input hashes and timings](examples/showcase/manifest.json) |
-| [Roll into box](examples/student/roll-into-box/) | First frame and official benchmark prompt for view 0151 |
-| [Wan2.1-Fun Sim-to-Real](https://huggingface.co/BRADY99/ParForce/tree/main/examples/sim2real) | Water pouring and floating lantern, with original inputs and reproduction settings |
+Output is `runs/student/outputs/student/result.mp4`. Use your own first frame and prompt. Both launchers write inference receipts beside the video. Use a fresh work directory per run.
 
 ## Condition rendering
 
