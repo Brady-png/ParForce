@@ -1,66 +1,118 @@
 <h1 align="center">Particle Forcing</h1>
-
-<p align="center"><b>Guiding Spatio-Temporal Layouts, Learning Physics-Aware Generation</b></p>
+<p align="center"><strong>Guiding Spatio-Temporal Layouts, Learning Physics-Aware Generation</strong></p>
 
 <p align="center">
-  <a href="https://huggingface.co/BRADY99/ParForce">Model weights</a> ·
-  <a href="examples/showcase/manifest.json">Showcase inputs</a> ·
-  <a href="https://huggingface.co/BRADY99/ParForce/tree/main/examples/sim2real">Sim-to-Real</a>
+  Liang Dong<sup>1</sup>, Haowen Xu<sup>2</sup>, Tieyue Yin<sup>3</sup>, Yunfeng Wu<sup>4</sup>,<br>
+  Jun Sun<sup>3</sup>, Songhua Liu<sup>2,*</sup>, Yingtian Zou<sup>2,*</sup>
 </p>
 
 <p align="center">
-  <img src="assets/teaser.webp" width="960" alt="ParForce teaser comparing 2D motion guidance with projected particles and surface depth when a ball passes through a tunnel.">
+  <sup>1</sup> Carnegie Mellon University · <sup>2</sup> Shanghai Jiao Tong University<br>
+  <sup>3</sup> Nanjing University · <sup>4</sup> The University of Hong Kong<br>
+  <small>* Corresponding authors</small>
 </p>
 
-ParForce generates video from a first frame and a scene and action prompt. The teacher also takes projected particle states and surface depth to guide motion and occlusion. The distilled student generates video from the first frame and prompt in four denoiser calls.
+<p align="center">
+  <a href="https://brady-png.github.io/parforce-project/"><strong>Project page</strong></a> ·
+  <a href="https://brady-png.github.io/parforce-project/assets/paper.pdf"><strong>Paper</strong></a> ·
+  <a href="https://huggingface.co/BRADY99/ParForce"><strong>Model weights</strong></a> ·
+  <a href="#quick-start"><strong>Quick start</strong></a> ·
+  <a href="#examples"><strong>Examples</strong></a>
+</p>
 
-## Code and model weights
+<p align="center">
+  <img src="assets/teaser.webp" width="960" alt="ParForce-generated videos with their projected particles and surface-depth sequences.">
+</p>
 
-The [ParForce model repository](https://huggingface.co/BRADY99/ParForce) is the download location for the adapters. The inference CLI in this checkout supports the H3 Teacher and the four-step H3 Student.
+ParForce uses projected particles and surface depth to guide motion and occlusion. A distilled four-step student generates video from a first frame and text.
 
-| Path | Contents |
-| --- | --- |
-| `infer.py`, `parforce/h3/` | H3 inference, particle and depth conditioning, and the Ascend runtime integration |
-| `parforce/conditions/` | Rigid-body simulation and particle/depth rendering from prepared masks, depth and action inputs |
-| `config/inference.json`, `examples/teacher/` | Inference settings and a paired example with a first frame, prompt and both controls |
-| [`examples/showcase/`](examples/showcase/) | Archived ParForce inputs and a local preview for simple dominoes, curtain, milk pour and red wine pour |
+## Method
 
-The Wan and CogVideoX adapters use separate backbones and require the matching inference implementations.
+<img src="assets/method.webp" width="960" alt="ParForce teacher and student architecture, including the physical conditions and the distillation path.">
 
-The [showcase manifest](examples/showcase/manifest.json) records the original Teacher and seed, together with checksums and the native sizes and timings of the inputs. The two pour prompts share the same first frame, particles, and depth. The dominoes inputs use different raster aspect ratios for the first frame and condition videos. Keep their archived framing when reproducing the demo. To preview all four cases locally, run `python -m http.server --directory examples/showcase 8000` and open `http://localhost:8000`.
+| Component | Inputs | Output |
+| --- | --- | --- |
+| Physical condition constructor | First frame and action instruction | Projected particle states and visible surface depth |
+| ParForce Teacher | First frame, prompt, particles, and depth | Motion-controlled RGB video |
+| ParForce Student | First frame and prompt | RGB video in four denoiser calls |
 
-## Inference on Ascend
+During distillation, the teacher supplies guidance from particle and depth sequences while the student learns to generate from the first frame and text. This repository includes the rigid-body simulation and rendering stage, which starts from prepared masks, depth, and action fields.
 
-The reviewed runtime uses Ascend 910B, CANN 9.0.1 and PyTorch 2.7.1 with matching `torch_npu`. Initialize your CANN shell environment. The `--runtime` argument points to the parent of the reviewed `videox_fun` package. Use the matching Diffusers and Transformers dependencies from your installation. The `--dependencies` argument can supply a versioned Python dependency overlay. Install FFmpeg with libx264 and the Python dependencies used in the entry points. `infer.py --help` lists the inputs.
+## Quick start
 
-Download the official [MiniMax-H3 FL2VA](https://huggingface.co/MiniMaxAI/MiniMax-H3/tree/main/FL2VA) base, the [ControlNet Union 2.0](https://huggingface.co/alibaba-pai/MiniMax-H3-Fun-Controlnet-Union-2.0) checkpoint and the ParForce adapters. The teacher samples the two registered videos on a common 24 fps timeline and maps all inputs to the first frame's viewport. The input camera framing should match across the first frame and both controls.
+### 1. Prepare the environment
+
+Use an Ascend NPU environment with Python 3.12, CANN 9.0.1, PyTorch 2.7.1 and matching `torch_npu`. The inference entry points were smoke-tested on four Ascend 910B devices. Initialize CANN and install FFmpeg with libx264. The [bundled runtime](runtime/README.md) provides the VideoX-Fun source used by the launchers.
 
 ```bash
-python infer.py teacher --base /path/to/FL2VA \
-  --runtime ../runtime --adapter ../weights/parforce_h3_teacher_5000.safetensors \
-  --control /path/to/MiniMax-H3-Fun-Controlnet-Union-2.0.safetensors \
-  --first-frame examples/teacher/first_frame.png --prompt-file examples/teacher/prompt.txt \
-  --particle examples/teacher/particles.mp4 --depth examples/teacher/depth.mp4 \
-  --work-dir runs/teacher --devices 8 --seed 42
+git clone https://github.com/Brady-png/ParForce.git
+cd ParForce
 
-python infer.py student --base /path/to/FL2VA \
-  --runtime ../runtime --adapter ../weights/parforce_h3_student_g200.safetensors \
-  --first-frame examples/teacher/first_frame.png --prompt-file examples/teacher/prompt.txt \
-  --work-dir runs/student --devices 8 --seed 42
+python -m pip install "huggingface_hub[cli]" pillow numpy opencv-python-headless \
+  diffusers==0.40.0 transformers==5.14.1 peft==0.20.0 \
+  safetensors==0.8.0 tokenizers==0.22.2
 ```
 
-The teacher writes `outputs/result.mp4` inside the work directory. The student writes `outputs/student/result.mp4`. Both write inference receipts next to the videos. [Exact settings](config/inference.json)
+### 2. Download the base and adapters
 
-## Physical condition rendering
+| Model | Download | Inputs |
+| --- | --- | --- |
+| MiniMax-H3 FL2VA | [Upstream base](https://huggingface.co/MiniMaxAI/MiniMax-H3/tree/main/FL2VA) | Shared base for both commands |
+| ParForce H3 Teacher | [Teacher adapter](https://huggingface.co/BRADY99/ParForce/blob/main/conditioned_models/parforce_h3_conditioned.safetensors) · [Union 2.0](https://huggingface.co/alibaba-pai/MiniMax-H3-Fun-Controlnet-Union-2.0) | First frame, prompt, particles, depth |
+| ParForce H3 Student | [Student adapter](https://huggingface.co/BRADY99/ParForce/blob/main/parforce_h3_student.safetensors) | First frame and prompt |
 
-The first-frame constructor is designed to take an image and prompt. Its perception and planning stages generate object masks, camera-space depth and action fields. The bundled `parforce/conditions` entry point starts from those intermediate files, builds rigid-body geometry, runs the simulation, and renders the projected particles and surface depth with automated checks. Inspect the input contract with `python -m parforce.conditions.run --help`. The Teacher can also consume the finished controls in the examples directly.
+```bash
+hf download MiniMaxAI/MiniMax-H3 --include 'FL2VA/*' --local-dir weights/minimax-h3
+hf download BRADY99/ParForce \
+  conditioned_models/parforce_h3_conditioned.safetensors \
+  parforce_h3_student.safetensors --local-dir weights/parforce
+hf download alibaba-pai/MiniMax-H3-Fun-Controlnet-Union-2.0 \
+  MiniMax-H3-Fun-Controlnet-Union-2.0.safetensors --local-dir weights/union
+```
 
-The constructor uses MuJoCo, OpenCV, NumPy, SciPy, trimesh, and Numba. It encodes the two condition videos with FFmpeg and libx264. Set `PARFORCE_FFMPEG` if the desired binary is outside your shell path.
+### 3. Run Teacher inference
+
+```bash
+python infer.py teacher --base weights/minimax-h3/FL2VA --runtime runtime \
+  --adapter weights/parforce/conditioned_models/parforce_h3_conditioned.safetensors \
+  --control weights/union/MiniMax-H3-Fun-Controlnet-Union-2.0.safetensors \
+  --first-frame examples/teacher/first_frame.png --prompt-file examples/teacher/prompt.txt \
+  --particle examples/teacher/particles.mp4 --depth examples/teacher/depth.mp4 \
+  --work-dir runs/teacher --devices 4 --seed 42
+```
+
+Output is `runs/teacher/outputs/result.mp4`. Keep the first frame and both control videos registered to the same camera view.
+
+### 4. Run four-step Student inference
+
+The student takes only the first frame and the official prompt for **Roll into box**. [Watch the archived comparison](https://brady-png.github.io/parforce-project/#student-comparisons/roll-into-box).
+
+```bash
+case_dir=examples/student/roll-into-box
+python infer.py student --base weights/minimax-h3/FL2VA --runtime runtime \
+  --adapter weights/parforce/parforce_h3_student.safetensors \
+  --first-frame "$case_dir/first_frame.png" --prompt-file "$case_dir/prompt.txt" \
+  --work-dir runs/roll-into-box --devices 4 --seed 42150
+```
+
+Output is `runs/roll-into-box/outputs/student/result.mp4`. The quick start uses a 90-frame clip at 24 fps. The archived benchmark run used its own duration and output crop, recorded in the [example manifest](examples/student/roll-into-box/manifest.json). Both launchers write inference receipts beside the video. Use a fresh work directory per run.
+
+## Examples
+
+| Example | What is provided |
+| --- | --- |
+| [Teacher showcase inputs](examples/showcase/) | Simple dominoes, curtain, milk pour, and red wine pour. Each has its original first frame, prompt, particles, and depth. [Input hashes and timings](examples/showcase/manifest.json) |
+| [Roll into box](examples/student/roll-into-box/) | First frame and official benchmark prompt for view 0151 |
+| [Wan2.1-Fun Sim-to-Real](https://huggingface.co/BRADY99/ParForce/tree/main/examples/sim2real) | Water pouring and floating lantern, with original inputs and reproduction settings |
+
+## Condition rendering
+
+With a prepared manifest containing masks, camera-space depth, and action fields, run the rigid-body renderer below. It uses MuJoCo, OpenCV, NumPy, SciPy, trimesh, Numba, and FFmpeg with libx264.
 
 ```bash
 python -m parforce.conditions.run --manifest /path/to/cases.json --output runs/conditions
 ```
 
-## Terms
+## Model terms
 
-The upstream MiniMax-H3 base and Union 2.0 have their own model terms. The reviewed adapters and code require the authors' release terms when published. [MiniMax-H3 license](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE) · [VideoX-Fun license](https://github.com/aigc-apps/VideoX-Fun/blob/main/LICENSE)
+The upstream models and runtime retain their own terms. [MiniMax-H3 license](https://huggingface.co/MiniMaxAI/MiniMax-H3/blob/main/LICENSE) · [Union 2.0 license](https://huggingface.co/alibaba-pai/MiniMax-H3-Fun-Controlnet-Union-2.0/blob/main/LICENSE) · [VideoX-Fun license](runtime/licenses/VideoX-Fun-LICENSE.txt)
