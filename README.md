@@ -73,16 +73,16 @@ hf download alibaba-pai/MiniMax-H3-Fun-Controlnet-Union-2.0 \
 ### 3. Run Teacher inference
 
 ```bash
-case_dir=examples/showcase/curtain
+case_dir=examples/showcase/macarons
 python infer.py teacher --base weights/minimax-h3/FL2VA --runtime runtime \
   --adapter weights/parforce/conditioned_models/parforce_h3_conditioned.safetensors \
   --control weights/union/MiniMax-H3-Fun-Controlnet-Union-2.0.safetensors \
   --first-frame "$case_dir/first_frame.png" --prompt-file "$case_dir/prompt.txt" \
   --particle "$case_dir/particles.mp4" --depth "$case_dir/depth.mp4" \
-  --work-dir runs/teacher --devices 4 --seed 43030
+  --work-dir runs/teacher --devices 4 --seed 42
 ```
 
-Output is `runs/teacher/outputs/result.mp4`. Keep the first frame and both control videos registered to the same camera view.
+Output is `runs/teacher/outputs/result.mp4`. This example uses the archived macaron plate-pull inputs. Keep the first frame and both control videos registered to the same camera view.
 
 ### 4. Run four-step Student inference
 
@@ -96,13 +96,13 @@ python infer.py student --base weights/minimax-h3/FL2VA --runtime runtime \
   --work-dir runs/roll-into-box --devices 4 --seed 42150
 ```
 
-Output is `runs/roll-into-box/outputs/student/result.mp4`. The quick start uses a 90-frame clip at 24 fps. The archived benchmark run used its own duration and output crop, recorded in the [example manifest](examples/student/roll-into-box/manifest.json). Both launchers write inference receipts beside the video. Use a fresh work directory per run.
+Output is `runs/roll-into-box/outputs/student/result.mp4`. The Ascend quick start uses 90 frames at 24 fps and tests the inference path. The archived benchmark ran on CUDA, generated 124 frames, kept 120, and restored the original image viewport. Matching the seed and frame count across these runtimes can still produce different motion. The [example manifest](examples/student/roll-into-box/manifest.json) records the archived settings. Both launchers write inference receipts beside the video. Use a fresh work directory per run.
 
 ## Examples
 
 | Example | What is provided |
 | --- | --- |
-| [Teacher showcase inputs](examples/showcase/) | Simple dominoes, curtain, milk pour, and red wine pour. Each has its original first frame, prompt, particles, and depth. [Input hashes and timings](examples/showcase/manifest.json) |
+| [Teacher showcase inputs](examples/showcase/) | Macarons, simple dominoes, curtain, milk pour, and red wine pour. Each has its original first frame, prompt, particles, and depth. [Input hashes and timings](examples/showcase/manifest.json) |
 | [Roll into box](examples/student/roll-into-box/) | First frame and official benchmark prompt for view 0151 |
 | [Wan2.1-Fun Sim-to-Real](https://huggingface.co/BRADY99/ParForce/tree/main/examples/sim2real) | Water pouring and floating lantern, with original inputs and reproduction settings |
 

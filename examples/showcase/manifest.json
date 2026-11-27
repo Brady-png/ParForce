@@ -1,6 +1,43 @@
 {
-  "description": "Archived Teacher inputs for four showcase cases. Milk and red wine share the same media and use different prompts.",
+  "description": "Archived Teacher inputs for five showcase cases. Milk and red wine share the same media and use different prompts.",
   "cases": [
+    {
+      "id": "macarons",
+      "title": "Macarons",
+      "source_case": "macaron8_03_plate_pull_back",
+      "archived_teacher": {
+        "model": "H3 Teacher step 5000",
+        "seed": 42
+      },
+      "files": {
+        "first_frame.png": {
+          "path": "macarons/first_frame.png",
+          "sha256": "67dff7041e370e972a3cf1162059ba48022d7562fbc78679998f7b57904c2b56",
+          "width": 1280,
+          "height": 720
+        },
+        "particles.mp4": {
+          "path": "macarons/particles.mp4",
+          "sha256": "8703e83201c78a1e6749958c6532229f013f5c9e652abad39fde7a51761bb3bf",
+          "width": 640,
+          "height": 360,
+          "fps": "24/1",
+          "frames": 97
+        },
+        "depth.mp4": {
+          "path": "macarons/depth.mp4",
+          "sha256": "c502cf4123b19560f584084ddfb87fcb935deb349b32d237bf1f27970c222f63",
+          "width": 640,
+          "height": 360,
+          "fps": "24/1",
+          "frames": 97
+        },
+        "prompt.txt": {
+          "path": "macarons/prompt.txt",
+          "sha256": "824371f31530a3c22131355b29c2bfb2f3df12a963fd80f3c24d7b14d50ea95b"
+        }
+      }
+    },
     {
       "id": "dominoes",
       "title": "Simple dominoes",

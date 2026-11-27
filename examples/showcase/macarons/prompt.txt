@@ -1,0 +1,1 @@
+Initial Scene: Three macarons are stacked on a plate: a pink macaron on top, a green macaron in the middle, and a yellow macaron at the bottom. The camera is fixed. External Force: Give the plate a quick pull away from the camera, then let go.
