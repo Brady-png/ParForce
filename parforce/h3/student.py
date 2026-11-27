@@ -153,11 +153,24 @@ def encode_video(vae, latent, row, ffmpeg, dest, device):
     rgb = ((pixels.float() * ps + pm).clamp(0, 1) * 255).byte()[0].permute(1, 2, 3, 0).cpu().numpy()
     assert rgb.shape == (row["native_frames"], HEIGHT, WIDTH, 3) and torch.isfinite(pixels).all()
     draft = dest.with_suffix(".tmp.mp4")
-    subprocess.run([ffmpeg, "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24",
-                    "-s", f"{WIDTH}x{HEIGHT}", "-r", str(row["fps"]), "-i", "pipe:0", "-an",
-                    "-c:v", "libx264", "-preset", "fast", "-crf", "18", "-pix_fmt", "yuv420p",
-                    "-threads", "2", "-movflags", "+faststart", str(draft)],
-                   input=rgb[:row["frames"]].tobytes(), check=True)
+    x, y, width, height = row.get("letterbox", [0, 0, WIDTH, HEIGHT])
+    output_width, output_height = row.get("original_size", [WIDTH, HEIGHT])
+    command = [ffmpeg, "-v", "error", "-y", "-f", "rawvideo", "-pix_fmt", "rgb24",
+               "-s", f"{output_width}x{output_height}", "-r", str(row["fps"]), "-i", "pipe:0", "-an",
+               "-c:v", "libx264", "-preset", "fast", "-crf", "18", "-pix_fmt", "yuv420p",
+               "-threads", "2", "-movflags", "+faststart", str(draft)]
+    frames = rgb[:row["frames"]]
+    if "letterbox" in row:
+        with subprocess.Popen(command, stdin=subprocess.PIPE) as encoder:
+            for frame in frames:
+                viewport = Image.fromarray(frame[y:y + height, x:x + width])
+                restored = viewport.resize((output_width, output_height), Image.Resampling.LANCZOS)
+                encoder.stdin.write(restored.tobytes())
+            encoder.stdin.close()
+            if encoder.wait():
+                raise subprocess.CalledProcessError(encoder.returncode, command)
+    else:
+        subprocess.run(command, input=frames.tobytes(), check=True)
     draft.replace(dest)
 
 

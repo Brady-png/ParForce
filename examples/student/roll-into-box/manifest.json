@@ -23,6 +23,7 @@
       640,
       360
     ],
+    "original_size": [3840, 2160],
     "video_sha256": "d3707c6149404e5cba77afd797fb51c59cf74ead4149c2b41155dc63bf809863",
     "future_text_used": false
   },

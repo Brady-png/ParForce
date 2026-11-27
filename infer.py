@@ -41,6 +41,8 @@ def args_from_cli():
     p.add_argument("--dependencies", type=Path, help="Optional pinned Python package overlay")
     p.add_argument("--first-frame", type=Path, required=True)
     p.add_argument("--prompt-file", type=Path, required=True)
+    p.add_argument("--student-case-manifest", type=Path,
+                   help="Replay the archived sampling and output geometry from a Student example manifest")
     p.add_argument("--particle", type=Path)
     p.add_argument("--depth", type=Path)
     p.add_argument("--work-dir", type=Path, required=True)
@@ -64,10 +66,37 @@ def video_shape(args, path):
     return frames["width"], frames["height"]
 
 
+def student_settings(args):
+    if args.student_case_manifest is None:
+        return {"seed": args.seed, "native_frames": 90, "frames": 90, "fps": 24}
+    manifest = json.loads(args.student_case_manifest.read_text())
+    for name, path in (("first_frame.png", args.first_frame), ("prompt.txt", args.prompt_file)):
+        expect(path, manifest["input_sha256"][name])
+    run = manifest["archived_run"]
+    if run["canvas_wh"] != [640, 384] or run["inference_steps"] != 4 or run["student_updates"] != 200:
+        raise ValueError("The manifest does not match the released four-step Student")
+    if not 0 < run["output_frames"] <= run["inference_frames"] or run["fps"] <= 0:
+        raise ValueError("Invalid frame counts or frame rate")
+    x, y, width, height = run["viewport_xywh"]
+    output_width, output_height = run["original_size"]
+    if min(x, y) < 0 or min(width, height) <= 0 or x + width > 640 or y + height > 384:
+        raise ValueError("The manifest viewport falls outside the Student canvas")
+    if min(output_width, output_height) <= 0 or output_width % 2 or output_height % 2:
+        raise ValueError("The restored video dimensions must be positive and even")
+    with Image.open(args.first_frame) as image:
+        if image.size != (640, 384):
+            raise ValueError("Use the archived letterboxed first frame from the example")
+    return {"seed": run["seed"], "native_frames": run["inference_frames"],
+            "frames": run["output_frames"], "fps": run["fps"], "letterbox": run["viewport_xywh"],
+            "original_size": run["original_size"]}
+
+
 def main():
     args = args_from_cli()
     if args.devices < 1:
         raise ValueError("--devices must be positive")
+    if args.model == "teacher" and args.student_case_manifest is not None:
+        raise ValueError("--student-case-manifest requires the Student")
     ffmpeg = shutil.which(args.ffmpeg)
     if ffmpeg is None:
         raise FileNotFoundError(args.ffmpeg)
@@ -80,6 +109,7 @@ def main():
         raise ValueError("The prompt file is empty")
     expect(runtime / "videox_fun/models/minimax_h3_transformer3d_control.py", ASCEND_FIX_SHA)
     expect(args.adapter, TEACHER_SHA if args.model == "teacher" else STUDENT_SHA)
+    sampling = student_settings(args) if args.model == "student" else None
     root.mkdir(parents=True, exist_ok=False)
     for subfolder in ("cache", "outputs", "inputs", "weights"):
         root.joinpath(subfolder).mkdir()
@@ -87,8 +117,8 @@ def main():
     with Image.open(args.first_frame) as image:
         width, height = image.size
         image = image.convert("RGB")
-        if args.model == "student":
-            image = image.resize((640,384), Image.Resampling.LANCZOS)
+        if args.model == "student" and image.size != (640, 384):
+            image = image.resize((640, 384), Image.Resampling.LANCZOS)
         image.save(first)
     if args.model == "teacher":
         if not all((args.particle, args.depth, args.control)):
@@ -119,8 +149,8 @@ def main():
         dump(root / "weights/PROVENANCE.json", {"student":{
             "path": "weights/student.safetensors","sha256": STUDENT_SHA,"G_step": 200}})
         dump(root / "CASES.json", [{
-            "case": "result", "seed": args.seed, "prompt": prompt, "first_frame": "inputs/first_frame.png",
-            "first_frame_sha256": sha(first), "native_frames": 90, "frames": 90, "fps": 24,
+            "case": "result", "prompt": prompt, "first_frame": "inputs/first_frame.png",
+            "first_frame_sha256": sha(first), **sampling,
         }])
         entry = source / "student.py"
         extra = []

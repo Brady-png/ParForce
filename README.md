@@ -93,10 +93,11 @@ case_dir=examples/student/roll-into-box
 python infer.py student --base weights/minimax-h3/FL2VA --runtime runtime \
   --adapter weights/parforce/parforce_h3_student.safetensors \
   --first-frame "$case_dir/first_frame.png" --prompt-file "$case_dir/prompt.txt" \
-  --work-dir runs/roll-into-box --devices 4 --seed 42150
+  --student-case-manifest "$case_dir/manifest.json" \
+  --work-dir runs/roll-into-box --devices 4
 ```
 
-Output is `runs/roll-into-box/outputs/student/result.mp4`. The Ascend quick start uses 90 frames at 24 fps and tests the inference path. The archived benchmark ran on CUDA, generated 124 frames, kept 120, and restored the original image viewport. Matching the seed and frame count across these runtimes can still produce different motion. The [example manifest](examples/student/roll-into-box/manifest.json) records the archived settings. Both launchers write inference receipts beside the video. Use a fresh work directory per run.
+Output is `runs/roll-into-box/outputs/student/result.mp4`. The [example manifest](examples/student/roll-into-box/manifest.json) supplies the benchmark seed (42150), 124 generated frames, 120 saved frames at 24 fps, and the original viewport restored to 3840 × 2160. The archived video was generated on CUDA. The Ascend run recomputes the encodings and samples noise on its own backend, so the motion can differ. Both launchers write inference receipts beside the video. Use a fresh work directory per run.
 
 ## Examples
 
