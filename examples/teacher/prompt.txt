@@ -1,2 +1,0 @@
-Initial Scene: A pink cross-shaped fabric floats in mid-air above a gray stepped block. The background features a white wall with a shelf holding blue and white cubes.
-External Force: Start the free cross-shaped fabric from rest under gravity. Leave all rigid fixtures fixed and introduce no later pulling or compression command.

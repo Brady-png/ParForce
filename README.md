@@ -73,12 +73,13 @@ hf download alibaba-pai/MiniMax-H3-Fun-Controlnet-Union-2.0 \
 ### 3. Run Teacher inference
 
 ```bash
+case_dir=examples/showcase/curtain
 python infer.py teacher --base weights/minimax-h3/FL2VA --runtime runtime \
   --adapter weights/parforce/conditioned_models/parforce_h3_conditioned.safetensors \
   --control weights/union/MiniMax-H3-Fun-Controlnet-Union-2.0.safetensors \
-  --first-frame examples/teacher/first_frame.png --prompt-file examples/teacher/prompt.txt \
-  --particle examples/teacher/particles.mp4 --depth examples/teacher/depth.mp4 \
-  --work-dir runs/teacher --devices 4 --seed 42
+  --first-frame "$case_dir/first_frame.png" --prompt-file "$case_dir/prompt.txt" \
+  --particle "$case_dir/particles.mp4" --depth "$case_dir/depth.mp4" \
+  --work-dir runs/teacher --devices 4 --seed 43030
 ```
 
 Output is `runs/teacher/outputs/result.mp4`. Keep the first frame and both control videos registered to the same camera view.
