@@ -31,11 +31,11 @@ ParForce uses projected particles and surface depth to guide motion and occlusio
 
 | Component | Inputs | Output |
 | --- | --- | --- |
-| Physical condition constructor | First frame and action instruction | Projected particle states and visible surface depth |
+| Physical condition constructor | First frame and action, with prepared actor perception for rigid scenes | Projected particle states and visible surface depth |
 | ParForce Teacher | First frame, prompt, particles, and depth | Motion-controlled RGB video |
 | ParForce Student | First frame and prompt | RGB video in four denoiser calls |
 
-During distillation, the teacher supplies guidance from particle and depth sequences while the student learns to generate from the first frame and text. This repository includes the rigid-body simulation and rendering stage, which starts from prepared masks, depth, and action fields.
+During distillation, the teacher supplies guidance from particle and depth sequences while the student learns to generate from the first frame and text.
 
 ## Quick start
 
@@ -97,10 +97,41 @@ Output is `runs/student/outputs/student/result.mp4`. Use your own first frame an
 
 ## Condition rendering
 
-With a prepared manifest containing masks, camera-space depth, and action fields, run the rigid-body renderer below. It uses MuJoCo, OpenCV, NumPy, SciPy, trimesh, Numba, and FFmpeg with libx264.
+The constructor produces synchronized `particles.mp4` and `depth.mp4` from the simulated state and a shared camera. It uses OpenCV, NumPy, SciPy, Pillow, trimesh, Numba, MuJoCo, and FFmpeg with libx264.
+
+### Cloth and pouring from a first frame
+
+Supported cloth actions include local grips, folds, returning lifted edges to the support, and wind on attached cloth. The liquid route pours into a stationary vessel and can preserve a visible initial fill or stream. The simulator represents the liquid's geometry and flow. Its color and appearance come from the text passed to the video generator.
+
+Create `inputs.json` with a unique case ID, a 384 × 256 RGB frame, and the original text for each case. Image paths are relative to the manifest.
+
+```json
+[
+  {
+    "case": "cloth_fold",
+    "image": "first_frame.png",
+    "prompt": "Initial Scene: A towel lies on a table. External Force: Lift its left edge and fold it toward the right."
+  }
+]
+```
+
+The offline agent uses a local [Qwen3.5-122B-A10B](https://huggingface.co/Qwen/Qwen3.5-122B-A10B) checkpoint. Download the revision listed in the [checkpoint manifest](parforce/conditions/policies/qwen-weights.json). Use Transformers with `Qwen3_5MoeForConditionalGeneration`, Accelerate, and a compatible Ascend PyTorch runtime. The verified BF16 configuration uses five 64 GiB Ascend devices.
 
 ```bash
-python -m parforce.conditions.run --manifest /path/to/cases.json --output runs/conditions
+python -m parforce.conditions.verify_checkpoint /path/to/qwen-checkpoint
+python -m parforce.conditions.material_agent \
+  --manifest inputs.json --model /path/to/qwen-checkpoint \
+  --output runs/material-conditions --devices 5 --rounds 4 --batched-npu-experts
+```
+
+Each accepted attempt has a compiled plan, solver states, both condition videos, and a review record. Review the initial alignment, action, physical continuity, and agreement between the two videos before supplying them to the teacher.
+
+### Rendering prepared plans
+
+The renderer runs on CPU with a prepared rigid, cloth, or pouring plan. Rigid plans supply masks, camera-space depth, and action fields. Use a fresh output directory. The result reports technical checks for each condition pair.
+
+```bash
+python -m parforce.conditions.run --manifest plans.json --output runs/conditions
 ```
 
 ## Model terms

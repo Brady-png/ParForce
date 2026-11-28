@@ -1,0 +1,39 @@
+Start from the initial RGB frame and the exact scene/action text. A later retry
+can inspect the pipeline's own conditions. Preserve image coordinates, actor
+identity, support, attachment, and the stated direction across retries. Identify
+observed geometry separately from assumed scale, hidden geometry, and force.
+
+For liquid, fit the receiver mouth, mid-body width and lower contour separately.
+Exclude handles and background objects from the vessel wall. Preserve visible
+initial fill and use an open hollow receiver with a closed floor. An occluded
+or cropped lip is a geometric assumption; keep the original viewport.
+Begin at the visible outlet and aim into the mouth. An offscreen inlet is an
+explicit boundary assumption when the instruction supplies an unseen source.
+Initialize the in-flight state when the photo already shows a connected stream.
+Use a sustained stream only during inflow. Check the visible stream is attached
+to the intended inlet, enters the receiver, fills it without obvious leakage,
+and clears when the flow stops. Sparse particle rendering keeps the same
+material IDs and includes the thin jet. Estimate a continuous visible jet
+surface only where densely simulated neighboring sections support it. Smooth
+isolated cross-section jitter while respecting the curved free-flight path.
+Keep the requested liquid identity and appearance in the original text for
+the RGB generator. Review the grayscale conditions for geometry and motion.
+
+For cloth, fit a single connected sheet in its observed pose. For a hanging
+sheet identify the upper attachment and apply wind to the free surface. Treat
+the observed hanging shape as a loaded rest equilibrium and model perturbations
+about it if gravity and prestress cannot both be recovered. Use a bounded gust
+with a restoring response and keep the attachment stable. For folding, keep
+the garment in its observed pose on its support. Drive only local grasp patches
+and let the remaining cloth follow constraints and contacts. Preserve the
+commanded order of grip movements. Use bounded force and smooth onset.
+For a garment on a support, include the waistband and hem in the rough outline.
+Set anchors only where attachments are visible or explicitly specified. The
+first-frame foreground boundaries refine nearby grip positions while preserving
+their sides, directions and order. Output the exact material route in the schema.
+
+Sample cloth in its rest material surface and preserve the triangle/barycentric
+binding through deformation. Render particles with a fixed camera and
+consistent marker scale. Generate surface depth via projected geometry, with
+first-hit visibility. Never replace depth with the sparse point image. Correct
+the earliest failing stage. A numeric pass is a candidate for visual review.

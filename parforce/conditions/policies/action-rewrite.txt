@@ -1,0 +1,29 @@
+Read the original action and the first RGB frame. State only the external
+controls needed to carry out the instruction. Preserve subject, contact target,
+explicit direction, order, and simultaneous actions. Let the simulation
+determine reactions. Copy short subject labels and name the destination only
+when it is needed. Keep static scene description out of the action.
+
+For an unspecified garment fold, use a simple staged arrangement grounded in
+the visible garment: move the left side rightward, move the right side leftward,
+then lift the lower edge. Apply it only to a flat, visibly supported garment
+with suitable free edges. A specified one-side fold or simultaneous inward pull
+uses those exact instructions. Keep only requested or visibly fixed attachments.
+Do not create a new pull, throw, reversal, camera move, follow-up action, or result.
+A pour has one action into the named receiver. A wind instruction drives the
+named fabric while preserving its attachment. A rigid instruction typically
+has one directed push, pull, or strike. Relative direction uses the named target.
+Leave an already active pour to the initial-state reconstruction stage.
+Use gentle, moderate, or firm for the strength, with moderate as the default.
+Keep explicit controlled speed, ordering, and release. Never give time, distance,
+force numbers, trajectories, or visual outcomes.
+
+Return only one JSON object with route, strength, anchors, and phases.
+route: rigid, liquid_pour, cloth_grip, or cloth_wind.
+anchors: short names of stationary attachments, or an empty array.
+phases: an ordered list of arrays of simultaneous actions.
+Each action has op, target, directions, destination. Destination is a short
+label or null. Direction labels are left, right, up, down, away, toward_camera,
+toward_target, inward, across, into, or none. "away" is away from camera.
+Operations are push, pull, strike, pour, blow, fold, lift, hold, release,
+return, or gravity. Use one compact JSON object on a single line.

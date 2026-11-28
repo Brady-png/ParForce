@@ -8,9 +8,44 @@ import re
 import time
 import traceback
 
+import cv2
+
 from .firstview_v2 import digest
 from .pipeline import run
 from .quality import POLICY, check_case
+
+
+def material_gate(report, output):
+    reasons = [name for name, passed in report.get("checks", {}).items() if not passed]
+    if not reasons and not report.get("numeric_pass", report.get("verified_numeric")):
+        reasons.append("Geometry or motion checks failed")
+    for name in ("particles", "depth"):
+        capture = cv2.VideoCapture(str(output / f"{name}.mp4"))
+        frame_count = 0
+        consistent_shape = True
+        while True:
+            ok, image = capture.read()
+            if not ok:
+                break
+            frame_count += 1
+            consistent_shape &= image.shape[:2] == (256, 384)
+        fps = capture.get(cv2.CAP_PROP_FPS)
+        capture.release()
+        if frame_count != 49 or abs(fps - 12) > 0.01 or not consistent_shape:
+            reasons.append(f"{name} must decode to 49 frames at 384x256 and 12 fps")
+    return {"passed": not reasons, "reasons": reasons, "visual_acceptance": None}
+
+
+def run_material(row, output):
+    if digest(row["image"]) != row["first_frame_sha256"]:
+        raise ValueError("Material plan is bound to a different first frame")
+    if row["material"] == "liquid_pour":
+        from .liquid_pour import run as backend
+    elif row["material"] in ("cloth_grip", "cloth_wind"):
+        from .cloth import run as backend
+    else:
+        raise ValueError(f"Unsupported material route {row['material']!r}")
+    return material_gate(backend(row, output.parent), output)
 
 
 def write_json(path, data):
@@ -27,17 +62,18 @@ def worker(row, root):
     output.mkdir(parents=True, exist_ok=True)
     start = time.monotonic()
     try:
-        if row["material"] != "rigid":
-            raise ValueError("Unsupported material or actuation route for the rigid backend")
-        pointmap = Path(row["depth_file"])
-        receipt = json.loads((pointmap.parent / "RECEIPT.json").read_text())
-        frame_hash = receipt.get("source_frame_sha256", receipt.get("first_frame_sha256"))
-        if frame_hash != row["first_frame_sha256"]:
-            raise ValueError("Depth receipt is bound to a different first frame")
-        if digest(pointmap) != receipt["pointmap_sha256"]:
-            raise ValueError("Pointmap checksum differs from the depth receipt")
-        run(row, root)
-        gate = check_case(row, output)
+        if row["material"] == "rigid":
+            pointmap = Path(row["depth_file"])
+            receipt = json.loads((pointmap.parent / "RECEIPT.json").read_text())
+            frame_hash = receipt.get("source_frame_sha256", receipt.get("first_frame_sha256"))
+            if frame_hash != row["first_frame_sha256"]:
+                raise ValueError("Depth receipt is bound to a different first frame")
+            if digest(pointmap) != receipt["pointmap_sha256"]:
+                raise ValueError("Pointmap checksum differs from the depth receipt")
+            run(row, root)
+            gate = check_case(row, output)
+        else:
+            gate = run_material(row, output)
         result = {"case": case, "completed": True, "gate": gate}
     except Exception as error:
         result = {
