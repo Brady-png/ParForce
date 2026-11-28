@@ -2,12 +2,12 @@
 <p align="center"><strong>Guiding Spatio-Temporal Layouts, Learning Physics-Aware Generation</strong></p>
 
 <p align="center">
-  Liang Dong<sup>1</sup>, Haowen Xu<sup>2</sup>, Tieyue Yin<sup>3</sup>, Yunfeng Wu<sup>4</sup>,<br>
-  Jun Sun<sup>3</sup>, Songhua Liu<sup>2,*</sup>, Yingtian Zou<sup>2,*</sup>
+  Liang Dong<sup>1,2</sup>, Haowen Xu<sup>1</sup>, Tieyue Yin<sup>1,3</sup>, Yunfeng Wu<sup>1,4</sup>,<br>
+  Jun Sun<sup>3</sup>, Songhua Liu<sup>1,*</sup>, Yingtian Zou<sup>1,*</sup>
 </p>
 
 <p align="center">
-  <sup>1</sup> Carnegie Mellon University · <sup>2</sup> Shanghai Jiao Tong University<br>
+  <sup>1</sup> Shanghai Jiao Tong University · <sup>2</sup> Carnegie Mellon University<br>
   <sup>3</sup> Nanjing University · <sup>4</sup> The University of Hong Kong<br>
   <small>* Corresponding authors</small>
 </p>
